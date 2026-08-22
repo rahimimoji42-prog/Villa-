@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>رانوی — بازی امتیازدهی استایل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --plum-950:#1c0f1a;
+    --plum-900:#2b1526;
+    --plum-800:#3d1d35;
+    --gold-500:#d4a24e;
+    --gold-300:#e8c98a;
+    --cream:#f3ead9;
+    --rose:#c9556b;
+    --green:#5f9e78;
+    --line: rgba(232,201,138,0.18);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:'Vazirmatn', sans-serif;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(212,162,78,0.10), transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, rgba(201,85,107,0.10), transparent 55%),
+      var(--plum-950);
+    color:var(--cream);
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+  }
+  #app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    padding:28px 20px 40px;
+    display:flex;
+    flex-direction:column;
+  }
+  .eyebrow{ font-size:12px; letter-spacing:0.14em; color:var(--gold-300); opacity:0.85; margin-bottom:6px; font-weight:500; }
+  h1{ font-size:27px; font-weight:900; line-height:1.35; margin-bottom:6px; }
+  h1 span{color:var(--gold-500);}
+  .sub{ color:var(--cream); opacity:0.65; font-size:14.5px; line-height:1.7; margin-bottom:22px; }
+  .card{
+    background:linear-gradient(180deg, var(--plum-900), var(--plum-800));
+    border:1px solid var(--line); border-radius:18px; padding:22px; margin-bottom:16px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.28);
+  }
+  label{ display:block; font-size:13px; color:var(--gold-300); margin-bottom:10px; font-weight:500; }
+  input[type=number], input[type=text]{
+    width:100%; background:rgba(0,0,0,0.22); border:1px solid var(--line); color:var(--cream);
+    border-radius:12px; padding:14px; font-size:16px; font-family:inherit; outline:none;
+  }
+  input:focus{border-color:var(--gold-500);}
+  .stepper{display:flex; align-items:center; gap:14px;}
+  .stepper input{text-align:center; font-size:22px; font-weight:700;}
+  .step-btn{
+    width:46px; height:46px; border-radius:12px; border:1px solid var(--line);
+    background:rgba(0,0,0,0.22); color:var(--gold-300); font-size:20px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .btn{
+    display:block; width:100%; text-align:center; padding:15px; border-radius:14px; border:none;
+    font-family:inherit; font-size:16px; font-weight:700; cursor:pointer;
+    background:linear-gradient(180deg, var(--gold-300), var(--gold-500)); color:#241206;
+    box-shadow:0 8px 18px rgba(212,162,78,0.25);
+  }
+  .btn.secondary{ background:transparent; color:var(--cream); border:1px solid var(--line); box-shadow:none; }
+  .btn.ghost{ background:transparent; color:var(--gold-300); border:none; box-shadow:none; padding:10px; font-weight:500; font-size:14px; }
+  .btn:disabled{opacity:0.4;}
+  .row{ display:flex; gap:10px; align-items:center; }
+  .row > input{ flex:1; }
+  .outfit-name-card{ background:rgba(0,0,0,0.16); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:10px; }
+  .outfit-name-card .idx{ font-size:12px; color:var(--gold-300); margin-bottom:10px; font-weight:700; }
+  .outfit-name-card input{ margin-bottom:8px; }
+  .outfit-name-card input:last-child{ margin-bottom:0; }
+  .spotlight{ position:relative; text-align:center; padding:22px 0 10px; }
+  .outfit-badge{
+    display:inline-flex; align-items:center; justify-content:center; width:74px; height:74px; border-radius:50%;
+    border:2px solid var(--gold-500); font-size:24px; font-weight:900; color:var(--gold-300); margin-bottom:10px;
+    background:radial-gradient(circle, rgba(212,162,78,0.14), transparent 70%);
+  }
+  .outfit-title{ font-size:20px; font-weight:900; margin-bottom:2px; }
+  .model-name{ font-size:13px; opacity:0.6; margin-bottom:16px; }
+  .timer-ring-wrap{ display:flex; justify-content:center; margin:6px 0 20px; }
+  .timer-num{ font-size:15px; color:var(--gold-300); text-align:center; margin-top:6px; opacity:0.8; }
+  .criterion-title{ font-size:19px; font-weight:700; margin-bottom:4px; }
+  .criterion-idx{ font-size:12px; color:var(--gold-300); letter-spacing:0.08em; margin-bottom:16px; display:block; }
+  .score-grid{ display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-top:6px; }
+  .score-btn{
+    aspect-ratio:1; border-radius:10px; border:1px solid var(--line);
+    background:rgba(0,0,0,0.2); color:var(--cream); font-size:16px; font-weight:700; cursor:pointer;
+  }
+  .score-btn:active{ transform:scale(0.94); }
+  .judge-pill{
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(0,0,0,0.18); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; margin-bottom:8px; font-size:14px;
+  }
+  .judge-pill b{ color:var(--gold-300); }
+  .final-item{
+    display:flex; align-items:center; gap:14px; padding:14px; border-radius:14px; border:1px solid var(--line);
+    background:rgba(0,0,0,0.16); margin-bottom:10px;
+  }
+  .final-texts{ display:flex; flex-direction:column; }
+  .final-model{ font-size:12px; opacity:0.55; }
+  .medal{ width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; flex-shrink:0; }
+  .m1{ background:#d4a24e; color:#2b1526; }
+  .m2{ background:#c9c9c9; color:#2b1526; }
+  .m3{ background:#a9714a; color:#2b1526; }
+  .mn{ background:transparent; border:1px solid var(--line); color:var(--gold-300); }
+  .final-name{ font-weight:700; font-size:15px; }
+  .final-score{ margin-right:auto; font-weight:900; color:var(--gold-300); font-size:16px; }
+  .top-nav{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; font-size:13px; opacity:0.6; }
+  .empty-note{ font-size:13px; opacity:0.6; line-height:1.8; text-align:center; padding:10px 0; }
+  .sound-toggle{
+    position:fixed; top:18px; left:18px; width:38px; height:38px; border-radius:50%;
+    border:1px solid var(--line); background:rgba(0,0,0,0.3); color:var(--gold-300); font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10;
+  }
+  .role-card{
+    display:block; width:100%; text-align:right; padding:20px; border-radius:16px;
+    border:1px solid var(--line); background:linear-gradient(180deg, var(--plum-900), var(--plum-800));
+    color:var(--cream); margin-bottom:14px; cursor:pointer;
+  }
+  .role-card .rt{ font-size:17px; font-weight:800; margin-bottom:4px; }
+  .role-card .rd{ font-size:13px; opacity:0.6; }
+  .room-code{
+    text-align:center; font-size:38px; font-weight:900; letter-spacing:0.15em;
+    color:var(--gold-300); background:rgba(0,0,0,0.22); border:1px dashed var(--gold-500);
+    border-radius:14px; padding:18px; margin-bottom:16px; direction:ltr;
+  }
+  .pulse-dot{
+    display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--gold-500);
+    margin-left:8px; animation:pulse 1.2s infinite;
+  }
+  @keyframes pulse{ 0%{opacity:0.3;} 50%{opacity:1;} 100%{opacity:0.3;} }
+  .wait-box{ text-align:center; padding:36px 10px; }
+  .err-box{
+    background:rgba(201,85,107,0.15); border:1px solid var(--rose); color:var(--cream);
+    border-radius:12px; padding:12px 14px; font-size:13px; margin-bottom:14px;
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ================= تنظیمات Firebase ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBJwY9JP9fq8f348PvIG3uEU8NXMfc_cV8",
+  authDomain: "villas-bride.firebaseapp.com",
+  databaseURL: "https://villas-bride-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "villas-bride",
+  storageBucket: "villas-bride.firebasestorage.app",
+  messagingSenderId: "404791598080",
+  appId: "1:404791598080:web:33bf3f4ab2cf7c49cecce5"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const CRITERIA = [
+  { key:'attract', label:'جذابیت کلی ست‌کردن لباس' },
+  { key:'coord',   label:'هماهنگی رنگ‌ها و اجزای لباس' },
+  { key:'creative',label:'خلاقیت و اورجینال بودن ایده' },
+  { key:'exec',    label:'اجرای تمیز و حرفه‌ای استایل' },
+];
+const ROUND_SECONDS = 30;
+
+const app = document.getElementById('app');
+
+/* ================= صدا ================= */
+let audioCtx = null;
+let soundOn = (localStorage.getItem('runway_sound') !== 'off');
+function ensureAudio(){
+  if(!audioCtx){ try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){} }
+  if(audioCtx && audioCtx.state === 'suspended'){ audioCtx.resume(); }
+}
+function tone(freq, start, dur, type='sine', gainVal=0.06){
+  if(!soundOn || !audioCtx) return;
+  const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+  osc.type = type; osc.frequency.value = freq;
+  gain.gain.setValueAtTime(gainVal, audioCtx.currentTime + start);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + start + dur);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(audioCtx.currentTime + start); osc.stop(audioCtx.currentTime + start + dur + 0.02);
+}
+function sfxClick(){ ensureAudio(); tone(520,0,0.06,'square',0.045); }
+function sfxSelect(){ ensureAudio(); tone(760,0,0.08,'sine',0.06); }
+function sfxSuccess(){ ensureAudio(); tone(523,0,0.12); tone(659,0.1,0.12); tone(784,0.2,0.18); }
+function sfxFanfare(){ ensureAudio(); [523,659,784,1046].forEach((f,i)=> tone(f,i*0.14,0.22,'triangle',0.07)); }
+function sfxTick(){ ensureAudio(); tone(880,0,0.03,'square',0.02); }
+function renderSoundToggle(){ return `<button class="sound-toggle" id="soundToggle" title="صدا">${soundOn?'🔊':'🔇'}</button>`; }
+function bindSoundToggle(){
+  const el = document.getElementById('soundToggle');
+  if(el) el.onclick = ()=>{ soundOn=!soundOn; localStorage.setItem('runway_sound', soundOn?'on':'off'); ensureAudio(); render(); };
+}
+function escapeHtml(str){ const d=document.createElement('div'); d.textContent=str||''; return d.innerHTML; }
+function escapeAttr(str){ return (str||'').replace(/"/g,'&quot;'); }
+
+/* ================= وضعیت محلی هر دستگاه ================= */
+let view = {
+  screen: 'roleSelect', // roleSelect | hostSetupCount | hostSetupOutfits | hostLobby | hostRound | hostRoundResult | hostFinal
+                         // joinRoom | joinName | judgeLive
+  role: null,            // 'host' | 'judge'
+  roomCode: null,
+  // host-only local draft before room creation:
+  numOutfits: 4,
+  outfitsDraft: [],
+  // judge-only:
+  joinCodeInput: '',
+  judgeName: null,
+  // shared cached room data (kept in sync by listeners)
+  room: null,            // {outfits, judges, game, scores, finalScores}
+  errorMsg: '',
+  // judge scoring in-progress
+  critIndex: 0,
+  tempScores: {},
+};
+
+let roomListenerRef = null;
+let timerInterval = null;
+
+function detachRoomListener(){
+  if(roomListenerRef){ roomListenerRef.off(); roomListenerRef = null; }
+}
+
+function attachRoomListener(code){
+  detachRoomListener();
+  roomListenerRef = db.ref('rooms/'+code);
+  roomListenerRef.on('value', (snap)=>{
+    const val = snap.val();
+    if(!val){ view.room = null; render(); return; }
+    view.room = {
+      outfits: val.outfits ? Object.keys(val.outfits).sort((a,b)=>a-b).map(k=>val.outfits[k]) : [],
+      judges: val.judges ? Object.keys(val.judges) : [],
+      game: val.game || {phase:'lobby', currentIndex:0, numOutfits:0, timerEndsAt:0},
+      scores: val.scores || {},
+      finalScores: val.finalScores || {},
+    };
+    render();
+  });
+}
+
+function genRoomCode(){
+  return String(Math.floor(1000 + Math.random()*9000));
+}
+
+/* ================= روتر ================= */
+function render(){
+  if(view.screen==='roleSelect') return renderRoleSelect();
+  if(view.screen==='hostSetupCount') return renderHostSetupCount();
+  if(view.screen==='hostSetupOutfits') return renderHostSetupOutfits();
+  if(view.screen==='hostLobby') return renderHostLobby();
+  if(view.screen==='hostRound') return renderHostRound();
+  if(view.screen==='hostRoundResult') return renderHostRoundResult();
+  if(view.screen==='hostFinal') return renderHostFinal();
+  if(view.screen==='joinRoom') return renderJoinRoom();
+  if(view.screen==='joinName') return renderJoinName();
+  if(view.screen==='judgeLive') return renderJudgeLive();
+}
+
+/* ================= نقش ================= */
+function renderRoleSelect(){
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="eyebrow">رانوی · بازی امتیازدهی استایل</div>
+    <h1>امشب کی <span>بهترین ست</span> رو می‌بنده؟</h1>
+    <div class="sub">یه نفر میزبان بازی می‌شه؛ بقیه از گوشی خودشون به‌عنوان داور وارد می‌شن.</div>
+    <button class="role-card" id="hostBtn">
+      <div class="rt">🎤 میزبان بازی</div>
+      <div class="rd">اتاق جدید می‌سازی، لباس‌ها رو اسم‌گذاری می‌کنی و راندها رو کنترل می‌کنی</div>
+    </button>
+    <button class="role-card" id="judgeBtn">
+      <div class="rt">📝 داور</div>
+      <div class="rd">با کد اتاق وصل می‌شی و از گوشی خودت نمره می‌دی</div>
+    </button>
+  `;
+  bindSoundToggle();
+  document.getElementById('hostBtn').onclick=()=>{
+    sfxClick();
+    view.role='host'; view.outfitsDraft=[]; view.numOutfits=4;
+    view.screen='hostSetupCount'; render();
+  };
+  document.getElementById('judgeBtn').onclick=()=>{
+    sfxClick();
+    view.role='judge'; view.errorMsg='';
+    const savedRoom = localStorage.getItem('runway_room');
+    const savedName = localStorage.getItem('runway_judge_name');
+    if(savedRoom && savedName){
+      view.roomCode = savedRoom; view.judgeName = savedName;
+      attachRoomListener(savedRoom);
+      view.screen='judgeLive'; render();
+    } else {
+      view.screen='joinRoom'; render();
+    }
+  };
+}
+
+/* ================= میزبان: تعداد لباس ================= */
+function renderHostSetupCount(){
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="top-nav"><button class="btn ghost" id="backBtn">بازگشت</button><span></span></div>
+    <h1 style="font-size:23px;">چند لباس/استایل داوری می‌شه؟</h1>
+    <div class="sub">هر لباس رو داورها از ۴ جنبه نمره می‌دن.</div>
+    <div class="card">
+      <label>تعداد لباس‌ها</label>
+      <div class="stepper">
+        <button class="step-btn" id="dec">−</button>
+        <input type="number" id="numOutfits" value="${view.numOutfits}" readonly>
+        <button class="step-btn" id="inc">+</button>
+      </div>
+    </div>
+    <div class="card">
+      <label>معیارهای داوری</label>
+      ${CRITERIA.map((c,i)=>`<div class="judge-pill"><span>${i+1}. ${c.label}</span><b>۱۰-۱</b></div>`).join('')}
+    </div>
+    <button class="btn" id="nextBtn">بعدی — اسم لباس‌ها</button>
+  `;
+  bindSoundToggle();
+  document.getElementById('backBtn').onclick=()=>{ sfxClick(); view.screen='roleSelect'; render(); };
+  document.getElementById('dec').onclick=()=>{ sfxClick(); view.numOutfits=Math.max(2,view.numOutfits-1); render(); };
+  document.getElementById('inc').onclick=()=>{ sfxClick(); view.numOutfits=Math.min(10,view.numOutfits+1); render(); };
+  document.getElementById('nextBtn').onclick=()=>{
+    sfxClick();
+    const prev = view.outfitsDraft;
+    view.outfitsDraft = Array.from({length:view.numOutfits}, (_,i)=> prev[i] || {name:'', model:''});
+    view.screen='hostSetupOutfits'; render();
+  };
+}
+
+/* ================= میزبان: اسم لباس‌ها ================= */
+function renderHostSetupOutfits(){
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="top-nav"><button class="btn ghost" id="backBtn">بازگشت</button><span>${view.numOutfits} استایل</span></div>
+    <h1 style="font-size:23px;">اسم لباس و مدل رو بنویس</h1>
+    <div class="sub">مثلاً «لباس عروس» با مدل «سارا». اگه اسم مدل نداری، خالی بذار.</div>
+    <div id="outfitList"></div>
+    <button class="btn" id="startBtn">بعدی — ساخت اتاق</button>
+  `;
+  const list = document.getElementById('outfitList');
+  view.outfitsDraft.forEach((o,i)=>{
+    const div = document.createElement('div');
+    div.className='outfit-name-card';
+    div.innerHTML = `
+      <div class="idx">لباس ${i+1}</div>
+      <input type="text" class="outfitNameInput" data-i="${i}" placeholder="اسم لباس (مثلاً: لباس عروس)" value="${escapeAttr(o.name)}">
+      <input type="text" class="outfitModelInput" data-i="${i}" placeholder="اسم مدل (اختیاری)" value="${escapeAttr(o.model)}">
+    `;
+    list.appendChild(div);
+  });
+  document.querySelectorAll('.outfitNameInput').forEach(inp=>{ inp.oninput=()=>{ view.outfitsDraft[inp.dataset.i].name = inp.value; }; });
+  document.querySelectorAll('.outfitModelInput').forEach(inp=>{ inp.oninput=()=>{ view.outfitsDraft[inp.dataset.i].model = inp.value; }; });
+  bindSoundToggle();
+  document.getElementById('backBtn').onclick=()=>{ sfxClick(); view.screen='hostSetupCount'; render(); };
+  document.getElementById('startBtn').onclick=()=>{
+    sfxClick();
+    view.outfitsDraft.forEach((o,i)=>{ if(!o.name.trim()) o.name = 'لباس '+(i+1); });
+    createRoomAndGoLobby();
+  };
+}
+
+function createRoomAndGoLobby(){
+  const code = genRoomCode();
+  const outfitsObj = {};
+  view.outfitsDraft.forEach((o,i)=>{ outfitsObj[i] = {name:o.name, model:o.model||''}; });
+  const roomData = {
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    outfits: outfitsObj,
+    judges: {},
+    game: { phase:'lobby', currentIndex:0, numOutfits:view.outfitsDraft.length, timerEndsAt:0 },
+    scores: {},
+    finalScores: {}
+  };
+  db.ref('rooms/'+code).set(roomData).then(()=>{
+    view.roomCode = code;
+    attachRoomListener(code);
+    view.screen='hostLobby';
+    render();
+  }).catch((err)=>{
+    view.errorMsg = 'ساخت اتاق ناموفق بود: ' + err.message;
+    render();
+  });
+}
+
+/* ================= میزبان: لابی ================= */
+function renderHostLobby(){
+  const r = view.room;
+  const judgeCount = r ? r.judges.length : 0;
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="eyebrow">اتاق ساخته شد</div>
+    <h1 style="font-size:22px;">این کد رو به داورها بده</h1>
+    <div class="room-code">${view.roomCode}</div>
+    <div class="sub">داورها از گوشی خودشون سایت رو باز می‌کنن، «داور» رو می‌زنن، این کد رو وارد می‌کنن و اسمشون رو یه‌بار ثبت می‌کنن.</div>
+    <div class="card">
+      <label><span class="pulse-dot"></span>داورهای وصل‌شده (${judgeCount})</label>
+      ${judgeCount===0 ? `<div class="empty-note">هنوز کسی وصل نشده.</div>` :
+        r.judges.map(name=>`<div class="judge-pill"><span>${escapeHtml(name)}</span><b>آماده</b></div>`).join('')
+      }
+    </div>
+    <button class="btn" id="startBtn" ${judgeCount<2?'disabled':''}>شروع بازی 🎬</button>
+    ${judgeCount<2 ? `<div class="empty-note">حداقل ۲ داور باید وصل بشن</div>` : ''}
+  `;
+  bindSoundToggle();
+  document.getElementById('startBtn').onclick=()=>{
+    if(!r || r.judges.length<2) return;
+    sfxClick();
+    db.ref('rooms/'+view.roomCode+'/game').update({
+      phase:'round', currentIndex:0, timerEndsAt: Date.now()+ROUND_SECONDS*1000
+    });
+    view.screen='hostRound';
+    render();
+    startHostTimerLoop();
+  };
+}
+
+/* ================= میزبان: راند ================= */
+function startHostTimerLoop(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    if(view.screen!=='hostRound' || !view.room) return;
+    const left = Math.max(0, Math.ceil((view.room.game.timerEndsAt - Date.now())/1000));
+    if(left<=5 && left>0) sfxTick();
+    updateHostTimerUI(left);
+    if(left<=0){ clearInterval(timerInterval); finishRoundAsHost(); }
+  },1000);
+}
+function updateHostTimerUI(left){
+  const el = document.getElementById('timerNum');
+  if(el) el.textContent = left + ' ثانیه مونده';
+  const ring = document.getElementById('ringFg');
+  if(ring){
+    const pct = Math.max(0,left)/ROUND_SECONDS;
+    const c = 2*Math.PI*54;
+    ring.style.strokeDashoffset = c*(1-pct);
+  }
+}
+function renderHostRound(){
+  const r = view.room;
+  const idx = r.game.currentIndex;
+  const o = r.outfits[idx];
+  const outfitScores = r.scores[idx] || {};
+  const judgeCount = Object.keys(outfitScores).length;
+  const totalJudges = r.judges.length;
+  const left = Math.max(0, Math.ceil((r.game.timerEndsAt - Date.now())/1000));
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="top-nav"><span>لباس ${idx+1} از ${r.outfits.length}</span><span>${judgeCount}/${totalJudges} داور نمره داد</span></div>
+    <div class="spotlight">
+      <div class="outfit-badge">${idx+1}</div>
+      <div class="outfit-title">${escapeHtml(o.name)}</div>
+      <div class="model-name">${o.model ? 'مدل: '+escapeHtml(o.model) : 'نوبت داوری این استایل'}</div>
+      <div class="timer-ring-wrap">
+        <svg width="120" height="120" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(232,201,138,0.15)" stroke-width="8"/>
+          <circle id="ringFg" cx="60" cy="60" r="54" fill="none" stroke="#d4a24e" stroke-width="8"
+            stroke-linecap="round" transform="rotate(-90 60 60)"
+            stroke-dasharray="${2*Math.PI*54}" stroke-dashoffset="0"/>
+        </svg>
+      </div>
+      <div class="timer-num" id="timerNum">${left} ثانیه مونده</div>
+    </div>
+    <div class="card">
+      ${judgeCount===0 ? `<div class="empty-note">هنوز کسی نمره نداده.</div>` :
+        Object.keys(outfitScores).map(name=>`<div class="judge-pill"><span>${escapeHtml(name)}</span><b>ثبت شد</b></div>`).join('')
+      }
+    </div>
+    <button class="btn secondary" id="endRoundBtn" ${judgeCount<2?'disabled':''}>پایان زودهنگام نمره‌دهی (حداقل ۲ داور)</button>
+  `;
+  bindSoundToggle();
+  document.getElementById('endRoundBtn').onclick=()=>{
+    sfxClick(); clearInterval(timerInterval); finishRoundAsHost();
+  };
+  updateHostTimerUI(left);
+}
+
+function finishRoundAsHost(){
+  const r = view.room;
+  const idx = r.game.currentIndex;
+  const outfitScores = r.scores[idx] || {};
+  let totals = [];
+  Object.keys(outfitScores).forEach(name=>{
+    const cs = outfitScores[name];
+    if(Object.keys(cs).length === CRITERIA.length){
+      totals.push({name, total: Object.values(cs).reduce((a,b)=>a+b,0)});
+    }
+  });
+  const updates = {};
+  if(totals.length>0){
+    const avg = totals.reduce((a,b)=>a+b.total,0)/totals.length;
+    updates['finalScores/'+idx] = avg;
+  }
+  updates['game/phase'] = 'roundResult';
+  db.ref('rooms/'+view.roomCode).update(updates).then(()=>{
+    view.lastRoundTotals = totals;
+    view.screen='hostRoundResult';
+    render();
+    sfxSuccess();
+  });
+}
+
+function renderHostRoundResult(){
+  const r = view.room;
+  const idx = r.game.currentIndex;
+  const o = r.outfits[idx];
+  const totals = view.lastRoundTotals || [];
+  const avg = r.finalScores[idx];
+  const isLast = idx >= r.outfits.length - 1;
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="eyebrow">نتیجه‌ی ${escapeHtml(o.name)}</div>
+    <h1 style="font-size:24px;">${avg!==undefined ? Number(avg).toFixed(1)+' از ۴۰' : 'امتیاز ثبت نشد'}</h1>
+    <div class="sub">${o.model ? 'مدل: '+escapeHtml(o.model)+' — ' : ''}${totals.length>0 ? totals.length+' داور نمره کامل ثبت کردن' : 'حداقل ۲ داور با نمره‌ی کامل لازم بود'}</div>
+    <div class="card">
+      ${totals.length===0 ? `<div class="empty-note">این لباس بدون امتیاز رد شد.</div>` :
+        totals.map(t=>`<div class="judge-pill"><span>${escapeHtml(t.name)}</span><b>${t.total}/40</b></div>`).join('')
+      }
+    </div>
+    <button class="btn" id="nextBtn">${isLast ? 'مشاهده نتیجه نهایی 🏆' : 'برو سراغ لباس بعدی'}</button>
+  `;
+  bindSoundToggle();
+  document.getElementById('nextBtn').onclick=()=>{
+    sfxClick();
+    if(isLast){
+      db.ref('rooms/'+view.roomCode+'/game/phase').set('final').then(()=>{
+        view.screen='hostFinal'; render(); sfxFanfare();
+      });
+    } else {
+      const nextIdx = idx+1;
+      db.ref('rooms/'+view.roomCode+'/game').update({
+        currentIndex: nextIdx, phase:'round', timerEndsAt: Date.now()+ROUND_SECONDS*1000
+      }).then(()=>{
+        view.screen='hostRound'; render(); startHostTimerLoop();
+      });
+    }
+  };
+}
+
+function renderHostFinal(){
+  const r = view.room;
+  const entries = Object.entries(r.finalScores)
+    .map(([idx,score])=>({ outfit:r.outfits[idx], score:Number(score) }))
+    .sort((a,b)=>b.score-a.score);
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="eyebrow">پایان بازی</div>
+    <h1>نتیجه <span>نهایی</span></h1>
+    <div class="sub">رتبه‌بندی استایل‌ها بر اساس میانگین امتیاز داورها</div>
+    <div class="card">
+      ${entries.length===0 ? `<div class="empty-note">هیچ لباسی امتیاز کامل نگرفت.</div>` :
+        entries.map((e,i)=>{
+          const mc = i===0?'m1':i===1?'m2':i===2?'m3':'mn';
+          const mi = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+          return `<div class="final-item">
+            <div class="medal ${mc}">${mi}</div>
+            <div class="final-texts">
+              <div class="final-name">${escapeHtml(e.outfit.name)}</div>
+              ${e.outfit.model ? `<div class="final-model">مدل: ${escapeHtml(e.outfit.model)}</div>` : ''}
+            </div>
+            <div class="final-score">${e.score.toFixed(1)}/40</div>
+          </div>`;
+        }).join('')
+      }
+    </div>
+    <button class="btn" id="restartBtn">بازی جدید (اتاق تازه)</button>
+  `;
+  bindSoundToggle();
+  document.getElementById('restartBtn').onclick=()=>{
+    sfxClick();
+    detachRoomListener(); clearInterval(timerInterval);
+    view = { screen:'roleSelect', role:null, roomCode:null, numOutfits:4, outfitsDraft:[], joinCodeInput:'', judgeName:null, room:null, errorMsg:'', critIndex:0, tempScores:{} };
+    render();
+  };
+}
+
+/* ================= داور: پیوستن ================= */
+function renderJoinRoom(){
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="top-nav"><button class="btn ghost" id="backBtn">بازگشت</button><span></span></div>
+    <h1 style="font-size:23px;">کد اتاق رو وارد کن</h1>
+    <div class="sub">کدی که میزبان روی صفحه‌اش می‌بینه، همون رو بپرس.</div>
+    ${view.errorMsg ? `<div class="err-box">${escapeHtml(view.errorMsg)}</div>` : ''}
+    <div class="card">
+      <label>کد ۴ رقمی</label>
+      <input type="text" id="codeInput" inputmode="numeric" maxlength="4" placeholder="مثلاً: 4821" style="text-align:center; font-size:24px; letter-spacing:0.2em; direction:ltr;">
+    </div>
+    <button class="btn" id="joinBtn">ورود به اتاق</button>
+  `;
+  bindSoundToggle();
+  document.getElementById('backBtn').onclick=()=>{ sfxClick(); view.screen='roleSelect'; render(); };
+  document.getElementById('joinBtn').onclick=()=>{
+    const code = document.getElementById('codeInput').value.trim();
+    if(!/^\d{4}$/.test(code)){ view.errorMsg='کد باید ۴ رقم باشه.'; render(); return; }
+    sfxClick();
+    db.ref('rooms/'+code).once('value').then(snap=>{
+      if(!snap.exists()){
+        view.errorMsg = 'اتاقی با این کد پیدا نشد.';
+        render();
+        return;
+      }
+      view.roomCode = code;
+      view.errorMsg = '';
+      view.screen='joinName';
+      render();
+    }).catch(err=>{
+      view.errorMsg = 'خطا در اتصال: '+err.message;
+      render();
+    });
+  };
+}
+
+function renderJoinName(){
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="top-nav"><button class="btn ghost" id="backBtn">بازگشت</button><span>اتاق ${view.roomCode}</span></div>
+    <h1 style="font-size:23px;">اسمت رو یه‌بار ثبت کن</h1>
+    <div class="sub">این اسم روی گوشیت ذخیره می‌شه؛ دفعه‌ی بعد لازم نیست دوباره بزنی.</div>
+    ${view.errorMsg ? `<div class="err-box">${escapeHtml(view.errorMsg)}</div>` : ''}
+    <div class="card">
+      <label>نام داور</label>
+      <input type="text" id="nameInput" placeholder="مثلاً: سارا">
+    </div>
+    <button class="btn" id="joinBtn">ورود به بازی</button>
+  `;
+  bindSoundToggle();
+  document.getElementById('backBtn').onclick=()=>{ sfxClick(); view.screen='joinRoom'; render(); };
+  document.getElementById('joinBtn').onclick=()=>{
+    const name = document.getElementById('nameInput').value.trim();
+    if(!name){ return; }
+    sfxClick();
+    db.ref('rooms/'+view.roomCode+'/judges/'+name).set(true).then(()=>{
+      localStorage.setItem('runway_room', view.roomCode);
+      localStorage.setItem('runway_judge_name', name);
+      view.judgeName = name;
+      attachRoomListener(view.roomCode);
+      view.screen='judgeLive';
+      render();
+    }).catch(err=>{
+      view.errorMsg = 'ثبت‌نام ناموفق بود: '+err.message;
+      render();
+    });
+  };
+}
+
+/* ================= داور: زنده ================= */
+function renderJudgeLive(){
+  const r = view.room;
+  if(!r){
+    app.innerHTML = `
+      ${renderSoundToggle()}
+      <div class="wait-box">
+        <div class="eyebrow">در حال اتصال...</div>
+        <div class="sub">اگه میزبان اتاق رو پاک کرده باشه، باید با کد جدید دوباره وصل بشی.</div>
+        <button class="btn secondary" id="leaveBtn">خروج از اتاق</button>
+      </div>
+    `;
+    bindSoundToggle();
+    document.getElementById('leaveBtn').onclick=()=>{ sfxClick(); leaveRoom(); };
+    return;
+  }
+  const phase = r.game.phase;
+  if(phase==='lobby'){
+    app.innerHTML = `
+      ${renderSoundToggle()}
+      <div class="wait-box">
+        <div class="eyebrow">${escapeHtml(view.judgeName)} عزیز</div>
+        <h1 style="font-size:22px;">وصل شدی <span class="pulse-dot"></span></h1>
+        <div class="sub">منتظر باش تا میزبان بازی رو شروع کنه.</div>
+      </div>
+      <div class="card">
+        <label>داورهای دیگه (${r.judges.length})</label>
+        ${r.judges.map(n=>`<div class="judge-pill"><span>${escapeHtml(n)}</span></div>`).join('')}
+      </div>
+      <button class="btn ghost" id="leaveBtn">خروج از اتاق</button>
+    `;
+    bindSoundToggle();
+    document.getElementById('leaveBtn').onclick=()=>{ sfxClick(); leaveRoom(); };
+    return;
+  }
+  if(phase==='final'){
+    const entries = Object.entries(r.finalScores)
+      .map(([idx,score])=>({ outfit:r.outfits[idx], score:Number(score) }))
+      .sort((a,b)=>b.score-a.score);
+    app.innerHTML = `
+      ${renderSoundToggle()}
+      <div class="eyebrow">پایان بازی</div>
+      <h1>نتیجه <span>نهایی</span></h1>
+      <div class="card">
+        ${entries.map((e,i)=>{
+          const mc = i===0?'m1':i===1?'m2':i===2?'m3':'mn';
+          const mi = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+          return `<div class="final-item">
+            <div class="medal ${mc}">${mi}</div>
+            <div class="final-texts"><div class="final-name">${escapeHtml(e.outfit.name)}</div></div>
+            <div class="final-score">${e.score.toFixed(1)}/40</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <button class="btn ghost" id="leaveBtn">خروج از اتاق</button>
+    `;
+    bindSoundToggle();
+    document.getElementById('leaveBtn').onclick=()=>{ sfxClick(); leaveRoom(); };
+    return;
+  }
+  const idx = r.game.currentIndex;
+  const o = r.outfits[idx];
+  const myScore = (r.scores[idx] || {})[view.judgeName];
+  if(phase==='roundResult' || (phase==='round' && myScore)){
+    app.innerHTML = `
+      ${renderSoundToggle()}
+      <div class="wait-box">
+        <div class="eyebrow">${escapeHtml(o.name)}</div>
+        <h1 style="font-size:22px;">نمره‌ت ثبت شد ✅</h1>
+        <div class="sub">${myScore ? 'جمع نمره‌ت: '+Object.values(myScore).reduce((a,b)=>a+b,0)+'/40 — ' : ''}منتظر بقیه‌ی داورها و میزبان باش.</div>
+      </div>
+    `;
+    bindSoundToggle();
+    return;
+  }
+  // phase==='round' و هنوز نمره ندادم -> فرم امتیازدهی
+  const crit = CRITERIA[view.critIndex];
+  app.innerHTML = `
+    ${renderSoundToggle()}
+    <div class="top-nav"><span>${escapeHtml(view.judgeName)}</span><span>${escapeHtml(o.name)}</span></div>
+    <span class="criterion-idx">معیار ${view.critIndex+1} از ${CRITERIA.length}</span>
+    <div class="criterion-title">${crit.label}</div>
+    <div class="sub" style="margin-bottom:14px;">از ۱ (ضعیف) تا ۱۰ (عالی) انتخاب کن</div>
+    <div class="score-grid">
+      ${Array.from({length:10},(_,i)=>i+1).map(n=>`<button class="score-btn" data-n="${n}">${n}</button>`).join('')}
+    </div>
+  `;
+  bindSoundToggle();
+  document.querySelectorAll('.score-btn').forEach(btn=>{
+    btn.onclick=()=>{
+      sfxSelect();
+      view.tempScores[crit.key] = parseInt(btn.dataset.n);
+      if(view.critIndex < CRITERIA.length-1){
+        view.critIndex++;
+        render();
+      } else {
+        const finalScores = {...view.tempScores};
+        db.ref('rooms/'+view.roomCode+'/scores/'+idx+'/'+view.judgeName).set(finalScores).then(()=>{
+          view.critIndex = 0;
+          view.tempScores = {};
+          sfxSuccess();
+          render();
+        });
+      }
+    };
+  });
+}
+
+function leaveRoom(){
+  localStorage.removeItem('runway_room');
+  localStorage.removeItem('runway_judge_name');
+  detachRoomListener();
+  view = { screen:'roleSelect', role:null, roomCode:null, numOutfits:4, outfitsDraft:[], joinCodeInput:'', judgeName:null, room:null, errorMsg:'', critIndex:0, tempScores:{} };
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
